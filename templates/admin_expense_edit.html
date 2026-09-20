@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Edit Expense{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Edit expense</h3>
+  <a href="{{ url_for('admin_expenses') }}" class="btn btn-link">&larr; Back to expenses</a>
+</div>
+
+{% if recurring %}
+<div class="alert alert-info" style="max-width: 640px;">
+  This is one of the monthly recurring expenses ({{ recurring }}), applied automatically.
+  Changes here affect only this month's entry — to change the amount that gets applied
+  each month, use Permanent Expenses.
+</div>
+{% endif %}
+
+<div class="card" style="max-width: 640px;"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    <div class="col-12">
+      <label class="form-label">Description</label>
+      <input type="text" name="description" class="form-control" value="{{ expense.description }}" required>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Amount</label>
+      <input type="number" step="0.01" name="amount" class="form-control" value="{{ expense.amount }}" required>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Category</label>
+      <input type="text" name="category" class="form-control" value="{{ expense.category or '' }}"
+             placeholder="e.g. Repairs, Utilities">
+    </div>
+    <div class="col-12">
+      <label class="form-label">Date (Ethiopian calendar)</label>
+      <div class="row g-1">
+        <div class="col-4">
+          <input type="number" min="1" max="30" class="form-control" name="expense_day"
+                 placeholder="Day" value="{{ ec_date.day }}" required>
+        </div>
+        <div class="col-4">
+          <select name="expense_month" class="form-select">
+            {% for num, label in ethiopian_months.items() %}
+            <option value="{{ num }}" {{ 'selected' if num == ec_date.month else '' }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-4">
+          <input type="number" class="form-control" name="expense_year"
+                 placeholder="Year" value="{{ ec_date.year }}" required>
+        </div>
+      </div>
+      <div class="form-text">Currently {{ expense.expense_date }} (Gregorian).</div>
+    </div>
+    <div class="col-12">
+      <label class="form-label">Receipt (photo/PDF)</label>
+      {% if expense.receipt_file_id %}
+      <div class="mb-2">
+        Current receipt:
+        <a href="{{ url_for('expense_receipt', expense_id=expense.id) }}" target="_blank">View</a>
+      </div>
+      {% else %}
+      <div class="text-muted small mb-2">No receipt on file.</div>
+      {% endif %}
+      <input type="file" name="receipt" class="form-control" accept=".png,.jpg,.jpeg,.pdf,.webp">
+      <div class="form-text">
+        {% if expense.receipt_file_id %}Choose a file to replace the current receipt.{% else %}Choose a file to add a receipt.{% endif %}
+      </div>
+      {% if expense.receipt_file_id %}
+      <div class="form-check mt-2">
+        <input class="form-check-input" type="checkbox" name="remove_receipt" value="1" id="remove-receipt">
+        <label class="form-check-label" for="remove-receipt">Remove the current receipt (ignored if you choose a new file)</label>
+      </div>
+      {% endif %}
+    </div>
+    <div class="col-12">
+      <button class="btn btn-primary">Save changes</button>
+      <a href="{{ url_for('admin_expenses') }}" class="btn btn-link">Cancel</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

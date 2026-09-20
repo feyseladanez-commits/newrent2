@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Shops{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Shops</h3>
+  <div>
+    <a href="{{ url_for('admin_shops', inactive=1 if not show_inactive else None) }}" class="btn btn-outline-secondary btn-sm me-2">
+      {{ 'Hide inactive' if show_inactive else 'Show inactive too' }}
+    </a>
+    <a href="{{ url_for('admin_shop_new') }}" class="btn btn-primary btn-sm">+ Add shop</a>
+  </div>
+</div>
+
+{% for key, label, shops in grouped %}
+<div class="card mb-3">
+  <div class="card-header">{{ label }}</div>
+  <div class="table-responsive">
+  <table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Shop</th><th>Tenant</th><th class="text-end">Rent</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for s in shops %}
+      <tr onclick="location.href='{{ url_for('admin_shop_detail', shop_no=s.shop_no) }}'" style="cursor:pointer">
+        <td>{{ s.shop_no }}</td>
+        <td>{{ s.tenant_name or '—vacant—' }}</td>
+        <td class="text-end">{{ s.monthly_rent | money }}</td>
+        <td>
+          {% if not s.active %}<span class="badge bg-secondary">inactive</span>
+          {% elif s.is_rented %}<span class="badge bg-success">rented</span>
+          {% else %}<span class="badge bg-warning text-dark">vacant</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% else %}
+<p class="text-muted">No shops yet. <a href="{{ url_for('admin_shop_new') }}">Add the first one</a>.</p>
+{% endfor %}
+{% endblock %}

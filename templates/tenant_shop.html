@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}My Shop{% endblock %}
+{% block content %}
+<h3>My Shop</h3>
+<div class="card"><div class="card-body">
+  <table class="table table-sm">
+    <tr><th style="width:220px">Shop number</th><td>{{ shop.shop_no }}</td></tr>
+    <tr><th>Floor</th><td>{{ shop.floor or '-' }}</td></tr>
+    <tr><th>Area</th><td>{{ shop.area_sqm or '-' }} m²</td></tr>
+    <tr><th>Monthly rent</th><td>{{ shop.monthly_rent | money }}</td></tr>
+    <tr><th>Purpose</th><td>{{ shop.purpose or '-' }}</td></tr>
+    <tr><th>Start date</th><td>{{ shop.start_date | ec }} E.C. <span class="text-muted small">({{ shop.start_date or '-' }} G.C.)</span></td></tr>
+    <tr><th>Lease end</th><td>{{ shop.lease_end_date or '-' }}{% if shop.lease_end_date %} ({{ shop.lease_end_date | ec }} E.C.){% endif %}</td></tr>
+  </table>
+</div></div>
+
+{% if documents %}
+<div class="card mt-3"><div class="card-body">
+  <h6>Documents</h6>
+  <ul class="list-group">
+    {% for d in documents %}
+    <li class="list-group-item"><a href="{{ url_for('shop_document_file', doc_id=d.id) }}" target="_blank">{{ d.label or 'Document' }}</a></li>
+    {% endfor %}
+  </ul>
+</div></div>
+{% endif %}
+{% endblock %}

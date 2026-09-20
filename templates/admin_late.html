@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Late Payments{% endblock %}
+{% block content %}
+<h3>Payments to Follow Up On</h3>
+<p class="text-muted">Shops with no payment recorded for period <strong>{{ period | period_label }}</strong> — "Pending" means the 30th hasn't arrived yet, "Late" means it has.</p>
+<div class="card"><div class="card-body">
+  <table class="table table-sm table-hover">
+    <thead><tr><th>Shop</th><th>Tenant</th><th>Phone</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for s in shops %}
+      <tr onclick="location.href='{{ url_for('admin_shop_detail', shop_no=s.shop_no) }}'" style="cursor:pointer">
+        <td>{{ s.shop_no }}</td>
+        <td>{{ s.tenant_name }}</td>
+        <td>{{ s.phone or '-' }}</td>
+        <td>
+          {% if s.status == 'late' %}
+          <span class="badge text-bg-danger">Late</span>
+          {% else %}
+          <span class="badge text-bg-warning">Pending</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="text-muted">Every rented shop has a payment logged for this period.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

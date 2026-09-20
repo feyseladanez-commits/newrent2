@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}My Ledger{% endblock %}
+{% block content %}
+<h3>My Ledger — Shop {{ shop.shop_no }}</h3>
+<div class="card"><div class="card-body">
+  <div class="table-responsive">
+  <table class="table table-sm align-middle" style="table-layout: fixed; width: 100%;">
+    <thead><tr>
+      <th class="text-end" style="width: 16%;">Rent Price</th>
+      <th class="text-center" style="width: 16%;">Month Covered</th>
+      <th class="text-center" style="width: 17%;">Payment Method</th>
+      <th class="text-center" style="width: 21%;">Payment Date</th>
+      <th class="text-center" style="width: 15%;">Reference No.</th>
+      <th class="text-center" style="width: 15%;">Receipt</th>
+    </tr></thead>
+    <tbody>
+    {% for e in ledger %}
+      <tr>
+        <td class="text-end">{{ e.amount | money }}</td>
+        <td class="text-center">
+          {% if e.type == 'charge' and e.already_paid %}
+          <span class="text-muted">Already paid</span>
+          {% elif e.period %}
+          {{ e.period | period_label }}
+          {% else %}
+          -
+          {% endif %}
+        </td>
+        <td class="text-center">{{ e.bank or '-' }}</td>
+        <td class="text-center">{{ e.date }}<br><span class="text-muted small">{{ e.date | ec }} E.C.</span></td>
+        <td class="text-center">{{ e.reference_no or '-' }}</td>
+        <td class="text-center">
+          {% if e.type == 'payment' and e.receipt_file_id %}
+            <a href="{{ url_for('payment_receipt', payment_id=e.id) }}" target="_blank">View</a>
+          {% else %}-{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-muted">No activity yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div></div>
+{% endblock %}

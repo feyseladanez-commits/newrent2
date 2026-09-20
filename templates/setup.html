@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Set up admin account{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card">
+    <div class="card-body p-4">
+      <h4 class="mb-1">Welcome 👋</h4>
+      <p class="text-muted">This is a first-time setup — create your admin account to get started.</p>
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Admin username</label>
+          <input type="text" name="username" class="form-control" required autofocus>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" required minlength="6">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirm password</label>
+          <input type="password" name="confirm" class="form-control" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Create admin account</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

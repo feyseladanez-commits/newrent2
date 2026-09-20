@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h3 class="mb-3">Dashboard</h3>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card stat-card"><div class="card-body">
+      <div class="text-muted small">Active shops</div>
+      <div class="display-6">{{ shop_count }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card"><div class="card-body">
+      <div class="text-muted small">Vacant shops</div>
+      <div class="display-6">{{ vacant_count }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card"><div class="card-body">
+      <div class="text-muted small">No payment yet this month</div>
+      <div class="display-6">{{ unpaid_count }}</div>
+      <div class="text-muted small">{{ late_count }} of these are past the 30th (late)</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card"><div class="card-body">
+      <h6 class="card-title">This month ({{ report.period }})</h6>
+      <table class="table table-sm mb-0">
+        <tr><td>Rent expected</td><td class="text-end">{{ report.rent_expected | money }}</td></tr>
+        <tr><td>Rent collected</td><td class="text-end">{{ report.rent_collected | money }}</td></tr>
+        <tr><td>Expenses</td><td class="text-end">{{ report.expenses | money }}</td></tr>
+        <tr><td><strong>Net</strong></td><td class="text-end"><strong>{{ report.net | money }}</strong></td></tr>
+      </table>
+    </div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card"><div class="card-body">
+      <h6 class="card-title">Quick links</h6>
+      <div class="d-grid gap-2">
+        <a href="{{ url_for('admin_shop_new') }}" class="btn btn-primary btn-sm">+ Add a shop</a>
+        <a href="{{ url_for('admin_late_payments') }}" class="btn btn-outline-secondary btn-sm">Shops to remind this month</a>
+        <a href="{{ url_for('admin_expenses') }}" class="btn btn-outline-secondary btn-sm">Log an expense</a>
+        <a href="{{ url_for('admin_report') }}" class="btn btn-outline-secondary btn-sm">Full monthly report</a>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6 class="card-title">All shops</h6>
+    <div class="table-responsive">
+    <table class="table table-sm table-hover">
+      <thead><tr><th>Shop</th><th>Tenant</th><th>Floor</th><th class="text-end">Rent</th></tr></thead>
+      <tbody>
+        {% for s in shops %}
+        <tr onclick="location.href='{{ url_for('admin_shop_detail', shop_no=s.shop_no) }}'" style="cursor:pointer">
+          <td>{{ s.shop_no }}</td>
+          <td>{{ s.tenant_name or '—vacant—' }}</td>
+          <td>{{ s.floor or '-' }}</td>
+          <td class="text-end">{{ s.monthly_rent | money }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

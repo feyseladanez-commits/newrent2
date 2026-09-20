@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}My Rent{% endblock %}
+{% block content %}
+<h3>My Rent</h3>
+{% if not shop %}
+<div class="alert alert-warning">Your account isn't linked to a shop yet. Contact the building admin.</div>
+{% else %}
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card stat-card"><div class="card-body">
+      <div class="text-muted small">Monthly rent</div>
+      <div class="display-6">{{ shop.monthly_rent | money }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card stat-card"><div class="card-body">
+      <div class="text-muted small">Shop {{ shop.shop_no }} — this month</div>
+      {% if status == 'paid' %}
+      <div class="display-5 balance-zero">Paid</div>
+      <div class="text-muted small">Thanks — your payment for this period is on record.</div>
+      {% elif status == 'pending' %}
+      <div class="display-5 balance-pending">Pending</div>
+      <div class="text-muted small">No payment recorded yet — not due until the 30th.</div>
+      {% else %}
+      <div class="display-5 balance-positive">Late</div>
+      <div class="text-muted small">No payment recorded and the due date has passed.</div>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+
+<div class="card"><div class="card-body">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="mb-0">Recent activity</h6>
+    <a href="{{ url_for('tenant_ledger') }}" class="small">View full ledger &rarr;</a>
+  </div>
+  <table class="table table-sm">
+    <thead><tr><th>Date</th><th>Type</th><th class="text-end">Amount</th></tr></thead>
+    <tbody>
+    {% for e in ledger %}
+      <tr>
+        <td>{{ e.date }}</td>
+        <td>{{ 'Charge' if e.type == 'charge' else 'Payment' }}</td>
+        <td class="text-end">{{ e.amount | money }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="3" class="text-muted">No activity yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endif %}
+{% endblock %}

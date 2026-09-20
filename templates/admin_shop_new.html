@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Add shop{% endblock %}
+{% block content %}
+<h3>Add a new shop</h3>
+<p class="text-muted">Shops start vacant with a flat monthly rent. You can assign a tenant afterwards.</p>
+<div class="card" style="max-width: 480px;">
+  <div class="card-body">
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label">Shop number</label>
+        <input type="text" name="shop_no" class="form-control" required autofocus>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Monthly rent</label>
+        <input type="number" step="0.01" name="monthly_rent" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Floor</label>
+        <select name="floor" class="form-select">
+          <option value="">— unassigned —</option>
+          {% for key, label in floors %}
+          <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Area (m²) — optional</label>
+        <input type="number" step="0.01" name="area_sqm" class="form-control">
+      </div>
+      <button type="submit" class="btn btn-primary">Add shop</button>
+      <a href="{{ url_for('admin_shops') }}" class="btn btn-link">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

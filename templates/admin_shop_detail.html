@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+{% block title %}Shop {{ shop.shop_no }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Shop {{ shop.shop_no }}
+    {% if not shop.active %}<span class="badge bg-secondary">inactive</span>
+    {% elif shop.is_rented %}<span class="badge bg-success">rented</span>
+    {% else %}<span class="badge bg-warning text-dark">vacant</span>{% endif %}
+  </h3>
+  <a href="{{ url_for('admin_shops') }}" class="btn btn-link">&larr; All shops</a>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card stat-card"><div class="card-body">
+      <div class="text-muted small">Monthly rent</div>
+      <div class="display-6">{{ shop.monthly_rent | money }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card"><div class="card-body">
+      <div class="text-muted small">This month</div>
+      {% if not shop.is_rented %}
+      <div class="display-6 text-muted">—</div>
+      <div class="text-muted small">Shop is vacant</div>
+      {% elif status == 'paid' %}
+      <div class="display-6 balance-zero">Paid</div>
+      <div class="text-muted small">A payment is on record for this period</div>
+      {% elif status == 'pending' %}
+      <div class="display-6 balance-pending">Pending</div>
+      <div class="text-muted small">No payment yet — not due until the 30th</div>
+      {% else %}
+      <div class="display-6 balance-positive">Late</div>
+      <div class="text-muted small">No payment recorded and the due date has passed</div>
+      {% endif %}
+    </div></div>
+  </div>
+  <div class="col-md-4 d-flex flex-column gap-2 justify-content-center">
+    {% if shop.active %}
+    <form method="post" action="{{ url_for('admin_shop_set_active', shop_no=shop.shop_no) }}"
+          onsubmit="return confirm('Deactivate shop {{ shop.shop_no }}?');">
+      <input type="hidden" name="active" value="0">
+      <button class="btn btn-outline-secondary btn-sm w-100">Deactivate shop</button>
+    </form>
+    {% else %}
+    <form method="post" action="{{ url_for('admin_shop_set_active', shop_no=shop.shop_no) }}">
+      <input type="hidden" name="active" value="1">
+      <button class="btn btn-outline-success btn-sm w-100">Reactivate shop</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-info">Info</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-payment">Record Payment</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ledger">Ledger</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-docs">Documents</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-account">Tenant Login</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-edit">Edit</button></li>
+</ul>
+
+<div class="tab-content">
+
+  <div class="tab-pane fade show active" id="tab-info">
+    <div class="card"><div class="card-body">
+      {% if shop.is_rented %}
+      <table class="table table-sm">
+        <tr><th style="width:220px">Tenant</th><td>{{ shop.tenant_name }}</td></tr>
+        <tr><th>Phone</th><td>{{ shop.phone or '-' }}</td></tr>
+        <tr><th>Purpose</th><td>{{ shop.purpose or '-' }}</td></tr>
+        <tr><th>National ID</th><td>{{ shop.national_id or '-' }}</td></tr>
+        <tr><th>TIN</th><td>{{ shop.tin_number or '-' }}</td></tr>
+        <tr><th>Start date</th><td>{{ shop.start_date | ec }} E.C. <span class="text-muted small">({{ shop.start_date or '-' }} G.C.)</span></td></tr>
+        <tr><th>Lease end</th><td>{{ shop.lease_end_date or '-' }}{% if shop.lease_end_date %} ({{ shop.lease_end_date | ec }} E.C.){% endif %}</td></tr>
+        <tr><th>Floor / Area</th><td>{{ shop.floor or '-' }} / {{ shop.area_sqm or '-' }} m²</td></tr>
+      </table>
+      <form method="post" action="{{ url_for('admin_vacate', shop_no=shop.shop_no) }}"
+            onsubmit="return confirm('Mark shop {{ shop.shop_no }} vacant? This clears the tenant\'s info and removes their login.');">
+        <button class="btn btn-outline-danger btn-sm">Mark shop vacant</button>
+      </form>
+      {% else %}
+      <p class="text-muted">This shop is vacant.</p>
+      <h6>Assign a tenant</h6>
+      <form method="post" action="{{ url_for('admin_assign_tenant', shop_no=shop.shop_no) }}" class="row g-2">
+        <div class="col-md-4"><input class="form-control" name="tenant_name" placeholder="Tenant name" required></div>
+        <div class="col-md-4"><input class="form-control" name="phone" placeholder="Phone"></div>
+        <div class="col-md-4"><input class="form-control" name="purpose" placeholder="Purpose (e.g. Retail)"></div>
+        <div class="col-12"><label class="form-label small mb-1">Start date (Ethiopian calendar)</label></div>
+        <div class="col-md-4">
+          <input type="number" min="1" max="30" class="form-control" name="start_day"
+                 placeholder="Day" value="{{ today_ec().day }}">
+        </div>
+        <div class="col-md-4">
+          <select name="start_month" class="form-select">
+            {% for num, label in ethiopian_months.items() %}
+            <option value="{{ num }}" {{ 'selected' if num == today_ec().month else '' }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <input type="number" class="form-control" name="start_year"
+                 placeholder="Year" value="{{ today_ec().year }}">
+        </div>
+        <div class="col-12"><button class="btn btn-primary btn-sm mt-1">Assign tenant</button></div>
+      </form>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-payment">
+    <div class="card"><div class="card-body">
+      {% if not shop.is_rented %}
+      <p class="text-muted">Assign a tenant before recording payments.</p>
+      {% else %}
+      <form method="post" action="{{ url_for('admin_pay', shop_no=shop.shop_no) }}" enctype="multipart/form-data" class="row g-3" id="pay-form">
+        <input type="hidden" name="confirm_duplicate" id="pay-confirm-duplicate" value="0">
+        <div class="col-md-3">
+          <label class="form-label">Amount</label>
+          <input type="number" step="0.01" name="amount" id="pay-amount" class="form-control" required>
+          <div id="pay-rent-hint" class="form-text"></div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Payment date</label>
+          <input type="date" name="payment_date" class="form-control" value="{{ today() }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Period covered</label>
+          <select name="period" id="pay-period" class="form-select">
+            <option value="">— not specified —</option>
+            {% for value, label in period_options() %}
+            <option value="{{ value }}" {{ 'selected' if value == current_period() else '' }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Bank / method</label>
+          <select name="bank" class="form-select">
+            <option value="">— select —</option>
+            {% for b in payment_methods %}<option>{{ b }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Reference number</label>
+          <input type="text" name="reference_no" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Note</label>
+          <input type="text" name="note" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Receipt (photo/PDF)</label>
+          <input type="file" name="receipt" class="form-control" accept=".png,.jpg,.jpeg,.pdf,.webp">
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary">Record payment</button>
+        </div>
+      </form>
+      <script>
+        (function () {
+          var rentByPeriod = {{ rent_by_period | tojson }};
+          var periodSelect = document.getElementById("pay-period");
+          var amountInput = document.getElementById("pay-amount");
+          var hint = document.getElementById("pay-rent-hint");
+          function fmt(n) {
+            return Number(n).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          }
+          function refresh() {
+            var rent = rentByPeriod[periodSelect.value];
+            if (rent === undefined || rent === null) {
+              hint.textContent = "";
+              amountInput.classList.remove("is-invalid");
+              return;
+            }
+            hint.textContent = "Rent for this period: " + fmt(rent);
+            var amt = parseFloat(amountInput.value);
+            if (!isNaN(amt) && Math.abs(amt - rent) > 0.005) {
+              hint.textContent += " — this doesn't match what's entered.";
+              amountInput.classList.add("is-invalid");
+            } else {
+              amountInput.classList.remove("is-invalid");
+            }
+          }
+          periodSelect.addEventListener("change", refresh);
+          amountInput.addEventListener("input", refresh);
+          refresh();
+        })();
+      </script>
+      <script>
+        (function () {
+          var form = document.getElementById("pay-form");
+          var confirmField = document.getElementById("pay-confirm-duplicate");
+          var periodSelect = document.getElementById("pay-period");
+          var checkUrl = "{{ url_for('admin_pay_check_duplicate', shop_no=shop.shop_no) }}";
+          var checking = false;
+          form.addEventListener("submit", function (e) {
+            // Already confirmed (this is the resubmit after the user said
+            // "yes, continue") or nothing to check — let it through.
+            if (confirmField.value === "1" || !periodSelect.value || checking) {
+              return;
+            }
+            e.preventDefault();
+            checking = true;
+            fetch(checkUrl + "?period=" + encodeURIComponent(periodSelect.value))
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                checking = false;
+                if (data.duplicate) {
+                  if (window.confirm(data.reason + "\n\nAre you sure you want to continue?")) {
+                    confirmField.value = "1";
+                    form.submit();
+                  }
+                } else {
+                  form.submit();
+                }
+              })
+              .catch(function () {
+                // If the check itself fails (offline, etc.), don't block a
+                // legitimate submission on it — just let the normal
+                // server-side validation handle it.
+                checking = false;
+                form.submit();
+              });
+          });
+        })();
+      </script>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-ledger">
+    <div class="card"><div class="card-body">
+      <div class="table-responsive">
+      <table class="table table-sm align-middle" style="table-layout: fixed; width: 100%;">
+        <thead><tr>
+          <th class="text-end" style="width: 14%;">Rent Price</th>
+          <th class="text-center" style="width: 14%;">Month Covered</th>
+          <th class="text-center" style="width: 14%;">Payment Method</th>
+          <th class="text-center" style="width: 18%;">Payment Date</th>
+          <th class="text-center" style="width: 13%;">Reference No.</th>
+          <th class="text-center" style="width: 12%;">Receipt</th>
+          <th class="text-center" style="width: 15%;">Actions</th>
+        </tr></thead>
+        <tbody>
+        {% for e in ledger %}
+          <tr>
+            <td class="text-end">{{ e.amount | money }}</td>
+            <td class="text-center">
+              {% if e.type == 'charge' and e.already_paid %}
+              <span class="text-muted">Already paid</span>
+              {% elif e.period %}
+              {{ e.period | period_label }}
+              {% else %}
+              -
+              {% endif %}
+            </td>
+            <td class="text-center">{{ e.bank or '-' }}</td>
+            <td class="text-center">{{ e.date }}<br><span class="text-muted small">{{ e.date | ec }} E.C.</span></td>
+            <td class="text-center">{{ e.reference_no or '-' }}</td>
+            <td class="text-center">
+              {% if e.type == 'payment' and e.receipt_file_id %}
+                <a href="{{ url_for('payment_receipt', payment_id=e.id) }}" target="_blank">View</a>
+              {% else %}-{% endif %}
+            </td>
+            <td class="text-center">
+              {% if e.type == 'payment' %}
+              <a href="{{ url_for('admin_payment_edit', payment_id=e.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <form method="post" action="{{ url_for('admin_payment_delete', payment_id=e.id) }}" class="d-inline"
+                    onsubmit="return confirm('Delete this payment of {{ e.amount | money }}? This can\'t be undone.');">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+              {% else %}
+              <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="text-muted">No activity yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-docs">
+    <div class="card"><div class="card-body">
+      {% if documents %}
+      <ul class="list-group mb-3">
+        {% for d in documents %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{{ url_for('shop_document_file', doc_id=d.id) }}" target="_blank">{{ d.label or 'Document' }}</a>
+          <span class="badge bg-light text-dark">{{ d.kind }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-muted">No documents uploaded yet.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin_shop_document', shop_no=shop.shop_no) }}"
+            enctype="multipart/form-data" class="row g-2">
+        <div class="col-md-5"><input class="form-control" name="label" placeholder="Label (e.g. Lease agreement, ID)"></div>
+        <div class="col-md-5"><input type="file" class="form-control" name="file" accept=".png,.jpg,.jpeg,.pdf,.webp" required></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">Upload</button></div>
+      </form>
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-account">
+    <div class="card"><div class="card-body">
+      {% if not shop.is_rented %}
+      <p class="text-muted">Assign a tenant before creating a login for them.</p>
+      {% elif account %}
+      <p>This shop's tenant logs in as <strong>{{ account.username }}</strong>
+        {% if not account.active %}<span class="badge bg-secondary">deactivated</span>{% endif %}.</p>
+      <form method="post" action="{{ url_for('admin_shop_account', shop_no=shop.shop_no) }}" class="row g-2 mb-2">
+        <div class="col-md-5"><input class="form-control" name="username" value="{{ account.username }}" placeholder="Username" required></div>
+        <div class="col-md-5"><input type="password" class="form-control" name="password" placeholder="New password" minlength="6" required></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">Update</button></div>
+      </form>
+      <form method="post" action="{{ url_for('admin_shop_account_delete', shop_no=shop.shop_no) }}"
+            onsubmit="return confirm('Remove this tenant\'s login?');">
+        <button class="btn btn-outline-danger btn-sm">Remove login</button>
+      </form>
+      {% else %}
+      <p class="text-muted">This tenant doesn't have a web login yet.</p>
+      <form method="post" action="{{ url_for('admin_shop_account', shop_no=shop.shop_no) }}" class="row g-2">
+        <div class="col-md-5"><input class="form-control" name="username" placeholder="Username" required></div>
+        <div class="col-md-5"><input type="password" class="form-control" name="password" placeholder="Password" minlength="6" required></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">Create login</button></div>
+      </form>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-edit">
+    <div class="card mb-3"><div class="card-body">
+      <h6>Shop details</h6>
+      <form method="post" action="{{ url_for('admin_shop_edit', shop_no=shop.shop_no) }}" class="row g-2">
+        <div class="col-md-3"><label class="form-label">Shop number</label>
+          <input class="form-control" name="shop_no" value="{{ shop.shop_no }}"></div>
+        <div class="col-md-3"><label class="form-label">Monthly rent</label>
+          <input type="number" step="0.01" class="form-control" name="monthly_rent" value="{{ shop.monthly_rent }}"></div>
+        <div class="col-md-3"><label class="form-label">Rent applies from</label>
+          <select name="rent_effective_period" class="form-select">
+            {% for value, label in period_options() %}
+            <option value="{{ value }}" {{ 'selected' if value == current_period() else '' }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Only used if you change the rent above.</div></div>
+        <div class="col-md-3"><label class="form-label">Floor</label>
+          <select name="floor" class="form-select">
+            <option value="">— unassigned —</option>
+            {% for key, label in floors %}
+            <option value="{{ key }}" {{ 'selected' if key == shop.floor else '' }}>{{ label }}</option>
+            {% endfor %}
+          </select></div>
+        <div class="col-md-3"><label class="form-label">Area (m²)</label>
+          <input type="number" step="0.01" class="form-control" name="area_sqm" value="{{ shop.area_sqm or '' }}"></div>
+        <div class="col-12"><button class="btn btn-primary btn-sm mt-1">Save shop details</button></div>
+      </form>
+      {% if rent_history %}
+      <hr>
+      <h6 class="small text-muted">Rent history</h6>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Applies from</th><th class="text-end">Rent</th></tr></thead>
+        <tbody>
+          {% for h in rent_history %}
+          <tr>
+            <td>{{ ethiopian_months[h.effective_period.split('-')[1] | int] }} {{ h.effective_period.split('-')[0] }}</td>
+            <td class="text-end">{{ h.rent | money }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </div></div>
+
+    {% if shop.is_rented %}
+    <div class="card mb-3"><div class="card-body">
+      <h6>Tenant details</h6>
+      <form method="post" action="{{ url_for('admin_tenant_edit', shop_no=shop.shop_no) }}" class="row g-2">
+        <div class="col-md-4"><label class="form-label">Name</label>
+          <input class="form-control" name="tenant_name" value="{{ shop.tenant_name or '' }}"></div>
+        <div class="col-md-4"><label class="form-label">Phone</label>
+          <input class="form-control" name="phone" value="{{ shop.phone or '' }}"></div>
+        <div class="col-md-4"><label class="form-label">Purpose</label>
+          <input class="form-control" name="purpose" value="{{ shop.purpose or '' }}"></div>
+        <div class="col-md-4"><label class="form-label">National ID</label>
+          <input class="form-control" name="national_id" value="{{ shop.national_id or '' }}"></div>
+        <div class="col-md-4"><label class="form-label">TIN number</label>
+          <input class="form-control" name="tin_number" value="{{ shop.tin_number or '' }}"></div>
+        <div class="col-12"><label class="form-label small mb-1">Start date (Ethiopian calendar)</label></div>
+        {% set sd_ec = to_ec(shop.start_date) or today_ec() %}
+        <div class="col-md-4">
+          <input type="number" min="1" max="30" class="form-control" name="start_day"
+                 placeholder="Day" value="{{ sd_ec.day }}">
+        </div>
+        <div class="col-md-4">
+          <select name="start_month" class="form-select">
+            {% for num, label in ethiopian_months.items() %}
+            <option value="{{ num }}" {{ 'selected' if num == sd_ec.month else '' }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <input type="number" class="form-control" name="start_year"
+                 placeholder="Year" value="{{ sd_ec.year }}">
+        </div>
+        <div class="col-12"><label class="form-label small mb-1">Lease end (Ethiopian calendar, leave blank if none)</label></div>
+        {% set le_ec = to_ec(shop.lease_end_date) %}
+        <div class="col-md-4">
+          <input type="number" min="1" max="30" class="form-control" name="lease_end_day"
+                 placeholder="Day" value="{{ le_ec.day if le_ec else '' }}">
+        </div>
+        <div class="col-md-4">
+          <select name="lease_end_month" class="form-select">
+            <option value="">—</option>
+            {% for num, label in ethiopian_months.items() %}
+            <option value="{{ num }}" {{ 'selected' if le_ec and num == le_ec.month else '' }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <input type="number" class="form-control" name="lease_end_year"
+                 placeholder="Year" value="{{ le_ec.year if le_ec else '' }}">
+        </div>
+        <div class="col-12"><button class="btn btn-primary btn-sm mt-1">Save tenant details</button></div>
+      </form>
+    </div></div>
+    {% endif %}
+
+    <div class="card border-danger"><div class="card-body">
+      <h6 class="text-danger">Danger zone</h6>
+      <form method="post" action="{{ url_for('admin_shop_delete', shop_no=shop.shop_no) }}"
+            onsubmit="return confirm('Permanently delete shop {{ shop.shop_no }} and ALL its payment/charge history? This cannot be undone.');">
+        <button class="btn btn-outline-danger btn-sm">Delete shop permanently</button>
+      </form>
+    </div></div>
+  </div>
+
+</div>
+{% endblock %}

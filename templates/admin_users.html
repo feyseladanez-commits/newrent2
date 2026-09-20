@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h3>Users</h3>
+<p class="text-muted">Tenant logins are created from each shop's page. This page is for admin accounts
+  and an overview of every login.</p>
+
+<div class="card mb-3" style="max-width: 480px;"><div class="card-body">
+  <h6>Add another admin</h6>
+  <form method="post" action="{{ url_for('admin_users_new') }}" class="row g-2">
+    <input type="hidden" name="role" value="admin">
+    <div class="col-6"><input class="form-control" name="username" placeholder="Username" required></div>
+    <div class="col-6"><input type="password" class="form-control" name="password" placeholder="Password" minlength="6" required></div>
+    <div class="col-12"><button class="btn btn-primary btn-sm">Create admin</button></div>
+  </form>
+</div></div>
+
+<div class="card"><div class="card-body">
+  <table class="table table-sm table-hover">
+    <thead><tr><th>Username</th><th>Role</th><th>Shop</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td><span class="badge bg-secondary">{{ u.role }}</span></td>
+        <td>{% if u.shop_no %}<a href="{{ url_for('admin_shop_detail', shop_no=u.shop_no) }}">{{ u.shop_no }}</a>{% else %}-{% endif %}</td>
+        <td>{% if u.active %}<span class="badge bg-success">active</span>{% else %}<span class="badge bg-secondary">deactivated</span>{% endif %}</td>
+        <td class="text-end">
+          {% if u.id != current_user().id %}
+          <form method="post" action="{{ url_for('admin_users_toggle', user_id=u.id) }}" class="d-inline">
+            <button class="btn btn-sm btn-outline-secondary">{{ 'Deactivate' if u.active else 'Reactivate' }}</button>
+          </form>
+          <form method="post" action="{{ url_for('admin_users_delete', user_id=u.id) }}" class="d-inline"
+                onsubmit="return confirm('Delete the login for {{ u.username }}?');">
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+          {% else %}
+          <span class="text-muted small">(you)</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

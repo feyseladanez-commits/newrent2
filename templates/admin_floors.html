@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Floors{% endblock %}
+{% block content %}
+<h3>Floors</h3>
+<p class="text-muted">Floors used when adding or editing a shop, and for grouping shops in reports.
+  "Lump sum" floors (like ETHIO TERIT or Tsedey Bank) pay their whole lease up front, so they're
+  kept out of the building-wide monthly rent-expected figures.</p>
+
+<div class="card mb-3" style="max-width: 480px;"><div class="card-body">
+  <h6>Add a floor</h6>
+  <form method="post" action="{{ url_for('admin_floors_new') }}" class="row g-2">
+    <div class="col-12">
+      <input class="form-control" name="label" placeholder="e.g. Fourth Floor" required>
+    </div>
+    <div class="col-12">
+      <select name="lump_sum" class="form-select">
+        <option value="0" selected>Monthly rent (normal)</option>
+        <option value="1">Lump sum (whole lease up front)</option>
+      </select>
+    </div>
+    <div class="col-12"><button class="btn btn-primary btn-sm">Add floor</button></div>
+  </form>
+</div></div>
+
+<div class="card"><div class="card-body">
+  <table class="table table-sm table-hover align-middle">
+    <thead><tr><th>Floor</th><th>Billing</th><th class="text-end">Shops</th><th class="text-end">Order</th><th></th></tr></thead>
+    <tbody>
+    {% for f in floors %}
+      <tr>
+        <td>{{ f.label }}</td>
+        <td>
+          {% if f.lump_sum %}<span class="badge bg-info text-dark">Lump sum</span>
+          {% else %}<span class="badge bg-secondary">Monthly</span>{% endif %}
+        </td>
+        <td class="text-end">{{ f.shop_count }}</td>
+        <td class="text-end">
+          <form method="post" action="{{ url_for('admin_floors_move', key=f.key) }}" class="d-inline">
+            <input type="hidden" name="direction" value="up">
+            <button class="btn btn-sm btn-outline-secondary" {{ 'disabled' if loop.first else '' }}>↑</button>
+          </form>
+          <form method="post" action="{{ url_for('admin_floors_move', key=f.key) }}" class="d-inline">
+            <input type="hidden" name="direction" value="down">
+            <button class="btn btn-sm btn-outline-secondary" {{ 'disabled' if loop.last else '' }}>↓</button>
+          </form>
+        </td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editFloorModal-{{ f.key }}">Edit</button>
+          <form method="post" action="{{ url_for('admin_floors_delete', key=f.key) }}" class="d-inline"
+                onsubmit="return confirm('Delete floor {{ f.label }}?');">
+            <button class="btn btn-sm btn-outline-danger" {{ 'disabled' if f.shop_count else '' }}
+                    title="{{ 'Move or deactivate its shops first' if f.shop_count else '' }}">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="text-muted">No floors yet — add one above.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if floors %}
+  <form method="post" action="{{ url_for('admin_floors_delete_all') }}"
+        onsubmit="return confirm('Delete every floor that has no shops on it? This can\'t be undone.');">
+    <button class="btn btn-sm btn-outline-danger">Delete all floors</button>
+    <span class="text-muted small">(skips any floor that still has shops on it)</span>
+  </form>
+  {% endif %}
+</div></div>
+
+{% for f in floors %}
+<div class="modal fade" id="editFloorModal-{{ f.key }}" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="post" action="{{ url_for('admin_floors_edit', key=f.key) }}">
+      <div class="modal-header"><h5 class="modal-title">Edit {{ f.label }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label">Floor name</label>
+          <input class="form-control" name="label" value="{{ f.label }}" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Billing</label>
+          <select name="lump_sum" class="form-select">
+            <option value="0" {{ 'selected' if not f.lump_sum else '' }}>Monthly rent (normal)</option>
+            <option value="1" {{ 'selected' if f.lump_sum else '' }}>Lump sum (whole lease up front)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
