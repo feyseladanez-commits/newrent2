@@ -92,10 +92,33 @@
     <tr><td>Rent expected</td><td class="text-end">{{ report.rent_expected | money }}</td></tr>
     {% endif %}
     <tr><td>Rent collected</td><td class="text-end">{{ report.rent_collected | money }}</td></tr>
+    {% if report.rent_not_collected is not none %}
+    <tr><td>Rent not collected</td><td class="text-end">{{ report.rent_not_collected | money }}</td></tr>
+    {% endif %}
     <tr><td>Expenses</td><td class="text-end">{{ report.expenses | money }}</td></tr>
     <tr><td><strong>Net</strong></td><td class="text-end"><strong>{{ report.net | money }}</strong></td></tr>
     {% if report.unpaid_shops_this_period is not none %}
-    <tr><td>Shops not paid</td><td class="text-end">{{ report.unpaid_shops_this_period }}</td></tr>
+    <tr>
+      <td colspan="2" class="p-0">
+        <details>
+          <summary class="d-flex justify-content-between px-2 py-1" style="cursor: pointer; list-style: none;">
+            <span>Shops not paid</span><span>{{ report.unpaid_shops_this_period }}</span>
+          </summary>
+          <div class="px-2 pb-2">
+            {% set unpaid_list = unpaid_shops|default([]) %}
+            {% if unpaid_list %}
+            <ul class="mb-0 ps-3 small">
+              {% for s in unpaid_list %}
+              <li>{{ s.shop_no }}{% if s.tenant_name %} <span class="text-muted">· {{ s.tenant_name }}</span>{% endif %}</li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted small mb-0">None — every shop in the report has paid.</p>
+            {% endif %}
+          </div>
+        </details>
+      </td>
+    </tr>
     {% endif %}
   </table>
   {% if excluded or scope == 'no_special' %}
